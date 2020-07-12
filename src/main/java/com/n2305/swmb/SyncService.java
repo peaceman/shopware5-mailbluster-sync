@@ -1,6 +1,5 @@
 package com.n2305.swmb;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n2305.swmb.mailbluster.MBOrder;
 import com.n2305.swmb.mailbluster.MailBlusterAPI;
 import com.n2305.swmb.properties.MailBlusterProperties;
@@ -9,7 +8,6 @@ import com.n2305.swmb.shopware.SWOrder;
 import com.n2305.swmb.shopware.ShopwareAPI;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -17,17 +15,10 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.Disposable;
-import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 
 import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -76,7 +67,6 @@ public class SyncService implements DisposableBean {
             .build();
 
         RateLimiter rl = RateLimiter.of("mailbluster", rlc);
-        MailBlusterSubscriber mbs = new MailBlusterSubscriber(rl);
 
         orderStreamDisposable = orderStream
             .map(OrderStreamElement::new)
@@ -187,71 +177,9 @@ public class SyncService implements DisposableBean {
         );   
     }
 
-    public static <T> Flux<T> limitIntervalRate(Flux<T> flux, int ratePerInterval, Duration interval) {
-        return flux
-            .window(ratePerInterval)
-            .zipWith(Flux.interval(Duration.ZERO, interval))
-            .flatMap(Tuple2::getT1);
-    }
-
     @Override
     public void destroy() throws Exception {
         orderStreamDisposable.dispose();
-    }
-
-    public static class MailBlusterSubscriber extends BaseSubscriber<MBOrder> {
-        private static final Logger logger = LoggerFactory.getLogger(MailBlusterSubscriber.class);
-        private final RateLimiter rateLimiter;
-        private final int chunkSize;
-        private final ObjectMapper objectMapper;
-
-        private int consumed = 0;
-
-        /**
-         * @param rateLimiter Requires a non blocking rate limiter
-         */
-        public MailBlusterSubscriber(RateLimiter rateLimiter) {
-            this.rateLimiter = rateLimiter;
-            this.objectMapper = new ObjectMapper();
-
-            chunkSize = rateLimiter.getRateLimiterConfig().getLimitForPeriod();
-
-            Flux.interval(Duration.ofMillis(10))
-                .subscribe(n -> this.handleRequests());
-        }
-
-        private synchronized void handleRequests() {
-            if (consumed < chunkSize) return;
-
-            if (rateLimiter.acquirePermission(chunkSize)) {
-                logger.info("Acquired permission from rate limiter");
-                consumed = 0;
-                request(chunkSize);
-            }
-        }
-
-        @Override
-        protected void hookOnSubscribe(Subscription subscription) {
-            rateLimiter.acquirePermission(chunkSize);
-            request(chunkSize);
-        }
-
-        @Override
-        protected synchronized void hookOnNext(MBOrder order) {
-            consumed++;
-            try {
-                try (OutputStream os = Files.newOutputStream(
-                    Path.of("outgoing/" + order.getId() + ".json"),
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING
-                )) {
-                    objectMapper.writerWithDefaultPrettyPrinter().writeValue(os, order);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            logger.info("Consumed entry: {} | {}", order.getId(), consumed);
-        }
     }
 
     public static class RateLimitElements<T> implements Function<Flux<T>, Flux<T>> {
