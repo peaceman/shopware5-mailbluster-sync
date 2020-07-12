@@ -1,0 +1,11 @@
+shopware:
+  baseUri:
+  username:
+  password:
+  exportedAttribute:
+
+mailbluster:
+  baseUri:
+  apiKey:
+  requestsPerMinute: 55
+  campaignMappings: []
