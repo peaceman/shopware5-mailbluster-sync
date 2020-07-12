@@ -1,0 +1,26 @@
+{
+  "id": "order_id_0001",
+  "customer": {
+    "firstName": "Richard",
+    "lastName": "Hendricks",
+    "email": "richard@example.com",
+    "subscribed": true
+  },
+  "campaignId": 2,
+  "currency": "USD",
+  "totalPrice": 10.43,
+  "items": [
+    {
+      "id": "101",
+      "name": "Reign Html Template",
+      "price": 2.13,
+      "quantity": 1
+    },
+    {
+      "id": "102",
+      "name": "Slick Html Template",
+      "price": 4.15,
+      "quantity": 2
+    }
+  ]
+}
