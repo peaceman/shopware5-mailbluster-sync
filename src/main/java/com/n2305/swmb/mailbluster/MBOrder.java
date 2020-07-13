@@ -260,7 +260,7 @@ public class MBOrder {
         public static Product forShipping(double price) {
             return new Product(
                 "shipping",
-                "shipping",
+                "Versand",
                 price,
                 1
             );
