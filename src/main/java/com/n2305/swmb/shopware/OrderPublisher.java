@@ -119,6 +119,8 @@ public class OrderPublisher implements Consumer<FluxSink<OrderListItem>> {
             ));
         }
 
+        filters.addAll(swProps.getOrderFilters());
+
         return filters;
     }
 

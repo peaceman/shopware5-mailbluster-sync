@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.n2305.swmb.properties.ShopwareProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -131,6 +132,7 @@ public class ShopwareAPI {
         private final String value;
         private final boolean operator;
 
+        @ConstructorBinding
         public Filter(String property, String value, String expression, Boolean operator) {
             this.property = property;
             this.value = value;

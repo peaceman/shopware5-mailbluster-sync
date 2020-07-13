@@ -1,9 +1,13 @@
 package com.n2305.swmb.properties;
 
+import com.n2305.swmb.shopware.ShopwareAPI;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
+import java.util.LinkedList;
+import java.util.List;
 
 @Configuration
 @ConfigurationProperties(prefix = "shopware")
@@ -13,6 +17,9 @@ public class ShopwareProperties {
     private String password;
     private String exportedAttribute;
     private Intervals intervals;
+
+    @NestedConfigurationProperty
+    private List<ShopwareAPI.Filter> orderFilters = new LinkedList<>();
 
     public String getBaseUri() {
         return baseUri;
@@ -56,6 +63,15 @@ public class ShopwareProperties {
 
     public ShopwareProperties setIntervals(Intervals intervals) {
         this.intervals = intervals;
+        return this;
+    }
+
+    public List<ShopwareAPI.Filter> getOrderFilters() {
+        return orderFilters;
+    }
+
+    public ShopwareProperties setOrderFilters(List<ShopwareAPI.Filter> orderFilters) {
+        this.orderFilters = orderFilters;
         return this;
     }
 
