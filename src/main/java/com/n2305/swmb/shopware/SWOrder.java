@@ -4,9 +4,14 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @JsonDeserialize(builder = SWOrder.Builder.class)
 public class SWOrder {
@@ -56,6 +61,8 @@ public class SWOrder {
 
     @JsonPOJOBuilder
     static class Builder {
+        private static final Logger logger = LoggerFactory.getLogger(Builder.class);
+
         int id;
         String number;
         Customer customer;
@@ -101,7 +108,20 @@ public class SWOrder {
         }
 
         Builder withRemoteAddress(String remoteAddress) {
-            this.remoteAddress = remoteAddress;
+            Optional.ofNullable(remoteAddress)
+                .map(s -> s.replaceAll("(?<=::):$", ""))
+                .map(s -> {
+                    try {
+                        return InetAddress.getByName(s);
+                    } catch (UnknownHostException e) {
+                        logger.info("Failed to sanitize remote address: {}", s);
+
+                        return null;
+                    }
+                })
+                .map(InetAddress::getHostAddress)
+                .ifPresent(s -> this.remoteAddress = s);
+
             return this;
         }
 
