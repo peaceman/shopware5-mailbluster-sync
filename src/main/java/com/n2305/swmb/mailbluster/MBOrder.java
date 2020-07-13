@@ -2,9 +2,11 @@ package com.n2305.swmb.mailbluster;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import org.apache.commons.text.WordUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @JsonInclude(Include.NON_NULL)
 public class MBOrder {
@@ -147,17 +149,26 @@ public class MBOrder {
             List<String> tags;
 
             public Builder withFirstName(String firstName) {
-                this.firstName = firstName;
+                this.firstName = Optional.ofNullable(firstName)
+                    .map(WordUtils::capitalizeFully)
+                    .orElse(null);
+
                 return this;
             }
 
             public Builder withLastName(String lastName) {
-                this.lastName = lastName;
+                this.lastName = Optional.ofNullable(lastName)
+                    .map(WordUtils::capitalizeFully)
+                    .orElse(null);
+
                 return this;
             }
 
             public Builder withEmail(String email) {
-                this.email = email;
+                this.email = Optional.ofNullable(email)
+                    .map(String::toLowerCase)
+                    .orElse(null);
+
                 return this;
             }
 
