@@ -23,12 +23,13 @@ public class OrderPublisher implements Consumer<FluxSink<OrderListItem>> {
 
     private final ShopwareAPI api;
     private final ShopwareProperties swProps;
-    private FluxSink<OrderListItem> sink;
-    private ConcurrentLinkedQueue<OrderListItem> oliQueue = new ConcurrentLinkedQueue<>();
-    private AtomicBoolean fetchOrdersInFlight = new AtomicBoolean(false);
-    private OffsetDateTime lastFetchedOrderTime;
+    private final ConcurrentLinkedQueue<OrderListItem> oliQueue = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean fetchOrdersInFlight = new AtomicBoolean(false);
 
+    private FluxSink<OrderListItem> sink;
+    private OffsetDateTime lastFetchedOrderTime;
     private Disposable checkIntervalDisposable;
+    private Disposable resetLastFetchedOrderTimeDisposable;
 
     public OrderPublisher(ShopwareAPI api, ShopwareProperties swProps) {
         this.api = api;
@@ -41,11 +42,16 @@ public class OrderPublisher implements Consumer<FluxSink<OrderListItem>> {
 
         sink.onRequest(this::onRequest);
         sink.onDispose(() -> {
-            if (checkIntervalDisposable != null)
-                checkIntervalDisposable.dispose();
+            Optional.ofNullable(checkIntervalDisposable)
+                .ifPresent(Disposable::dispose);
+
+            Optional.ofNullable(resetLastFetchedOrderTimeDisposable)
+                .ifPresent(Disposable::dispose);
         });
 
         setupCheckInterval(Duration.ofMillis(1));
+        resetLastFetchedOrderTimeDisposable = Flux.interval(swProps.getIntervals().getResetLastFetchedOrderTime())
+            .subscribe(n -> this.updateLastFetchOrderTime(null));
     }
 
     private void setupCheckInterval(Duration checkInterval) {
@@ -118,7 +124,7 @@ public class OrderPublisher implements Consumer<FluxSink<OrderListItem>> {
 
     private void handleOrderListItems(List<OrderListItem> orderListItems) {
         if (orderListItems.isEmpty()) {
-            setupCheckInterval(Duration.ofSeconds(30));
+            setupCheckInterval(swProps.getIntervals().getOnEmptyList());
         } else {
             setupCheckInterval();
         }
@@ -126,15 +132,15 @@ public class OrderPublisher implements Consumer<FluxSink<OrderListItem>> {
         orderListItems.forEach(oli -> {
             oliQueue.add(oli);
 
-            updateLastFetchOrderTime(oli);
+            updateLastFetchOrderTime(oli.getOrderTime());
         });
     }
 
-    private synchronized void updateLastFetchOrderTime(OrderListItem oli) {
-        if (this.lastFetchedOrderTime == null) {
-            this.lastFetchedOrderTime = oli.getOrderTime();
-        } else if (oli.getOrderTime().isAfter(lastFetchedOrderTime)) {
-            this.lastFetchedOrderTime = oli.getOrderTime();
+    private synchronized void updateLastFetchOrderTime(OffsetDateTime orderTime) {
+        if (this.lastFetchedOrderTime == null || orderTime == null) {
+            this.lastFetchedOrderTime = orderTime;
+        } else if (lastFetchedOrderTime.isBefore(orderTime)) {
+            this.lastFetchedOrderTime = orderTime;
         }
     }
 }
