@@ -2,6 +2,7 @@ package com.n2305.swmb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n2305.swmb.mailbluster.MailBlusterAPI;
+import com.n2305.swmb.mailbluster.PartnerCampaignIDMapper;
 import com.n2305.swmb.properties.MailBlusterProperties;
 import com.n2305.swmb.properties.ShopwareProperties;
 import com.n2305.swmb.shopware.FilterQueryParamSerializer;
@@ -50,6 +51,16 @@ public class ShopwareMailBlusterApplication {
 			webClientBuilder.baseUrl(mbProps.getBaseUri())
 			.defaultHeaders(headers -> headers.set("Authorization", mbProps.getApiKey()))
 			.build()
+		);
+	}
+
+	@Bean
+	public PartnerCampaignIDMapper partnerCampaignIDMapper(
+		MailBlusterProperties mbProps
+	) {
+		return new PartnerCampaignIDMapper(
+			mbProps.getPartnerToCampaignMap(),
+			mbProps.getCampaignMappingPassThroughPattern()
 		);
 	}
 

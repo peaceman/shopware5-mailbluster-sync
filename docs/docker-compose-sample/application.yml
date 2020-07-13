@@ -3,9 +3,14 @@ shopware:
   username:
   password:
   exportedAttribute:
+  orderFilters:
+    - property:
+      value:
+      expression:
 
 mailbluster:
   baseUri:
   apiKey:
   requestsPerMinute: 55
   campaignMappings: []
+  campaignMappingPassThroughPattern:

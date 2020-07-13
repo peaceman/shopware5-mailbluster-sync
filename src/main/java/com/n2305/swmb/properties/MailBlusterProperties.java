@@ -15,6 +15,7 @@ public class MailBlusterProperties {
     private String apiKey;
     private int requestsPerMinute;
     private List<CampaignMappingEntry> campaignMappings;
+    private String campaignMappingPassThroughPattern;
 
     public String getBaseUri() {
         return baseUri;
@@ -60,6 +61,15 @@ public class MailBlusterProperties {
                     CampaignMappingEntry::getCampaign
                 )))
             .orElse(Map.of());
+    }
+
+    public String getCampaignMappingPassThroughPattern() {
+        return campaignMappingPassThroughPattern;
+    }
+
+    public MailBlusterProperties setCampaignMappingPassThroughPattern(String campaignMappingPassThroughPattern) {
+        this.campaignMappingPassThroughPattern = campaignMappingPassThroughPattern;
+        return this;
     }
 
     static class CampaignMappingEntry {

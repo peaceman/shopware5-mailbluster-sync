@@ -2,6 +2,7 @@ package com.n2305.swmb;
 
 import com.n2305.swmb.mailbluster.MBOrder;
 import com.n2305.swmb.mailbluster.MailBlusterAPI;
+import com.n2305.swmb.mailbluster.PartnerCampaignIDMapper;
 import com.n2305.swmb.properties.MailBlusterProperties;
 import com.n2305.swmb.shopware.OrderStreamFactory;
 import com.n2305.swmb.shopware.SWOrder;
@@ -36,22 +37,23 @@ public class SyncService implements DisposableBean {
 
     private final OrderStreamFactory orderStreamFactory;
     private final MailBlusterProperties mbProps;
-    private final Map<String, Integer> partnerCampaignMap;
     private final MailBlusterAPI mbAPI;
     private final ShopwareAPI swAPI;
+    private final PartnerCampaignIDMapper partnerCampaignIDMapper;
     private Disposable orderStreamDisposable;
 
     public SyncService(
         OrderStreamFactory orderStreamFactory,
         MailBlusterProperties mbProps,
         MailBlusterAPI mbAPI,
-        ShopwareAPI swAPI
+        ShopwareAPI swAPI,
+        PartnerCampaignIDMapper partnerCampaignIDMapper
     ) {
         this.orderStreamFactory = orderStreamFactory;
         this.mbProps = mbProps;
-        this.partnerCampaignMap = mbProps.getPartnerToCampaignMap();
         this.mbAPI = mbAPI;
         this.swAPI = swAPI;
+        this.partnerCampaignIDMapper = partnerCampaignIDMapper;
     }
 
     @PostConstruct
@@ -116,7 +118,7 @@ public class SyncService implements DisposableBean {
         return new MBOrder.Builder()
             .withId(swOrder.getNumber())
             .withCustomer(mbCustomer)
-            .withCampaignId(mapPartnerIDToCampaignID(swOrder.getPartnerID()))
+            .withCampaignId(partnerCampaignIDMapper.apply(swOrder.getPartnerID()))
             .withCurrency(swOrder.getCurrency())
             .withTotalPrice(swOrder.getInvoiceAmount())
             .withItems(items)
@@ -155,10 +157,6 @@ public class SyncService implements DisposableBean {
             .map(fetchFn)
             .filter(s -> !s.isEmpty())
             .findFirst();
-    }
-
-    private Integer mapPartnerIDToCampaignID(String partnerID) {
-        return partnerCampaignMap.get(partnerID);
     }
     
     private List<MBOrder.Product> mapOrderDetails(List<SWOrder.Article> articles) {
