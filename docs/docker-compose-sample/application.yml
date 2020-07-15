@@ -14,3 +14,7 @@ mailbluster:
   requestsPerMinute: 55
   campaignMappings: []
   campaignMappingPassThroughPattern:
+
+logging:
+  file:
+    path: /log

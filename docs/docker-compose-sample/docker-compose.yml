@@ -8,3 +8,4 @@ services:
     <<: *restart-policy
     volumes:
       - ./application.yml:/workspace/application.yml
+      - ./logs:/logs
