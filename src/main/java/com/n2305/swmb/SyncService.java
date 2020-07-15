@@ -81,6 +81,7 @@ public class SyncService implements DisposableBean {
                 }
             })
             .transform(RateLimitElements.with(rl))
+            .delayElements(Duration.ofMillis(60 * 1000 / mbProps.getRequestsPerMinute()))
             .flatMap(ose -> this.mbAPI.createOrder(ose.getMbOrder())
                 .thenReturn(ose)
                 .onErrorResume(
