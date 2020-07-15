@@ -1,5 +1,6 @@
 package com.n2305.swmb.mailbluster;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,19 +23,30 @@ public class MailBlusterAPI {
     }
 
     public Mono<ResponseEntity<Void>> createOrder(MBOrder order) {
-        return httpClient.post()
-            .uri(uriBuilder -> uriBuilder.path("/api/orders").build())
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(BodyInserters.fromValue(order))
-            .retrieve()
-            .toBodilessEntity()
-            .doOnError(e -> logger.warn("Failed to create order", e))
-            .doOnError(WebClientResponseException.UnprocessableEntity.class, e -> {
-                logger.warn(
-                    "Received unprocessable entity for order {}: {}",
-                    order.getId(),
-                    e.getResponseBodyAsString()
-                );
-            });
+        try {
+            String jsonOrder = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(order);
+
+            return httpClient
+                .post()
+                .uri(uriBuilder -> uriBuilder.path("/api/orders").build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(jsonOrder))
+                .retrieve()
+                .toBodilessEntity()
+                .doOnError(
+                    e -> !(e instanceof WebClientResponseException),
+                    e -> logger.warn("Failed to create order", e)
+                )
+                .doOnError(WebClientResponseException.class, e -> {
+                    logger.warn(
+                        "Received WebClientResponseException for order {}:\nRequest:\n{}\nResponse:\n{}",
+                        order.getId(),
+                        jsonOrder,
+                        String.format("%s\n%s", e.getHeaders().toString(), e.getResponseBodyAsString())
+                    );
+                });
+        } catch (JsonProcessingException e) {
+            return Mono.error(e);
+        }
     }
 }
