@@ -254,7 +254,7 @@ public class MBOrder {
             this.id = id;
             this.name = name;
             this.price = price;
-            this.quantity = quantity;
+            this.quantity = Math.max(1, quantity);
         }
 
         public static Product forShipping(double price) {
