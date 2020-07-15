@@ -91,12 +91,20 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<version>2.4.0</version>
 				<configuration>
-					<image>
-						<name>peaceman/shopware5-mailbluster-sync:${project.version}</name>
-					</image>
+					<from>
+						<image>openjdk:14</image>
+					</from>
+					<to>
+						<image>peaceman/shopware5-mailbluster-sync:${project.version}</image>
+					</to>
+					<container>
+						<appRoot>/workspace</appRoot>
+						<workingDirectory>/workspace</workingDirectory>
+					</container>
 				</configuration>
 			</plugin>
 			<plugin>
