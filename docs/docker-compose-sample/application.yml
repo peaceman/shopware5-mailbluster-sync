@@ -17,4 +17,4 @@ mailbluster:
 
 logging:
   file:
-    path: /log
+    path: /logs
