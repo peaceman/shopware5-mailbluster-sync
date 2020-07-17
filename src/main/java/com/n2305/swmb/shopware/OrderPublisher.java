@@ -111,7 +111,10 @@ public class OrderPublisher implements Consumer<FluxSink<OrderListItem>> {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
         List<ShopwareAPI.Filter> filters = new LinkedList<>();
-        filters.add(new ShopwareAPI.Filter("attribute." + swProps.getExportedAttribute(), null));
+        filters.add(new ShopwareAPI.Filter(
+            "attribute." + swProps.getExportedAttribute(),
+            null, "="
+        ));
 
         if (lastFetchedOrderTime != null) {
             filters.add(new ShopwareAPI.Filter(

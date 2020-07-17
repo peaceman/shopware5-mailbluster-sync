@@ -14,10 +14,12 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ShopwareAPI {
     private static final Logger logger = LoggerFactory.getLogger(ShopwareAPI.class);
@@ -60,19 +62,29 @@ public class ShopwareAPI {
                     .serialize(filters)
                     .forEach(uriBuilder::queryParam);
 
-                return uriBuilder
+                URI uri = uriBuilder
                     .path("/api/orders")
                     .queryParam("limit", LIST_LIMIT)
                     .queryParam("sort[0][property]", "orderTime")
                     .queryParam("sort[0][direction]", "ASC")
                     .build();
+
+                logger.info("Fetch orders with uri: {}", uri.toString());
+
+                return uri;
             })
             .retrieve()
             .bodyToMono(String.class)
             .doOnError(e -> logger.warn("Failed to fetch orders {}", e.getMessage()))
             .<List<OrderListItem>>flatMap(src -> {
                 try {
-                    return Mono.just(objectReader.readValue(src));
+                    List<OrderListItem> result = objectReader.readValue(src);
+                    logger.info("Fetched orders with ids: {}", result.stream()
+                        .map(OrderListItem::getId)
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(", ")));
+
+                    return Mono.just(result);
                 } catch (JsonProcessingException e) {
                     logger.warn("Failed to deserialize orders", e);
                     return Mono.error(e);
