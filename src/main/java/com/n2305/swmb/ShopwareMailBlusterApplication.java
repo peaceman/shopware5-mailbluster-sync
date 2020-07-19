@@ -73,4 +73,9 @@ public class ShopwareMailBlusterApplication {
 	public Clock clock() {
 		return Clock.systemDefaultZone();
 	}
+
+	@Bean
+	public EmailValidator emailValidator() {
+		return EmailValidator.getInstance();
+	}
 }

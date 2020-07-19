@@ -13,17 +13,20 @@ public class OrderStreamFactory {
 
     private final ShopwareAPI shopwareAPI;
     private final ShopwareProperties swProps;
+    private final EmailValidator emailValidator;
 
-    public OrderStreamFactory(ShopwareAPI shopwareAPI, ShopwareProperties swProps) {
+    public OrderStreamFactory(ShopwareAPI shopwareAPI, ShopwareProperties swProps, EmailValidator emailValidator) {
         this.shopwareAPI = shopwareAPI;
         this.swProps = swProps;
+        this.emailValidator = emailValidator;
     }
 
     public Flux<SWOrder> create() {
         OrderPublisher orderPublisher = new OrderPublisher(shopwareAPI, swProps);
 
         return Flux.create(orderPublisher)
-            .flatMap(this::fetchOrder);
+            .flatMap(this::fetchOrder)
+            .filter(swo -> emailValidator.isValid(swo.getCustomer().getEmail()));
     }
 
     private Mono<SWOrder> fetchOrder(OrderListItem oli) {
