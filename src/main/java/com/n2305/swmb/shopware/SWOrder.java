@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +29,9 @@ public class SWOrder {
     private final List<Article> details;
     private final Address billing;
     private final Address shipping;
+
+    private OffsetDateTime fetchTime;
+    private OffsetDateTime listFetchTime;
 
     private SWOrder(
         int id,
@@ -57,6 +61,26 @@ public class SWOrder {
         this.details = details;
         this.billing = billing;
         this.shipping = shipping;
+    }
+
+    public SWOrder setFetchTime(OffsetDateTime fetchTime) {
+        this.fetchTime = fetchTime;
+
+        return this;
+    }
+
+    public SWOrder setListFetchTime(OffsetDateTime fetchTime) {
+        this.listFetchTime = fetchTime;
+
+        return this;
+    }
+
+    public OffsetDateTime getFetchTime() {
+        return fetchTime;
+    }
+
+    public OffsetDateTime getListFetchTime() {
+        return listFetchTime;
     }
 
     @JsonPOJOBuilder

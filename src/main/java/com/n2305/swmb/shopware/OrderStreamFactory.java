@@ -1,6 +1,7 @@
 package com.n2305.swmb.shopware;
 
 import com.n2305.swmb.properties.ShopwareProperties;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class OrderStreamFactory {
 
     private Mono<SWOrder> fetchOrder(OrderListItem oli) {
         return shopwareAPI.fetchOrder(oli.getId())
+            .map(o -> o.setListFetchTime(oli.getFetchTime()))
             .onErrorResume(e -> Mono.empty());
     }
 }

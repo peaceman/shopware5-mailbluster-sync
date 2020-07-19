@@ -10,6 +10,7 @@ public class OrderListItem {
     private final int id;
     private final String number;
     private final OffsetDateTime orderTime;
+    private OffsetDateTime fetchTime;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public OrderListItem(
@@ -46,5 +47,13 @@ public class OrderListItem {
     @Override
     public int hashCode() {
         return Objects.hash(id, number);
+    }
+
+    public void setFetchTime(OffsetDateTime fetchTime) {
+        this.fetchTime = fetchTime;
+    }
+
+    public OffsetDateTime getFetchTime() {
+        return fetchTime;
     }
 }

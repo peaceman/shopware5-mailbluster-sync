@@ -84,6 +84,9 @@ public class ShopwareAPI {
                         .map(String::valueOf)
                         .collect(Collectors.joining(", ")));
 
+                    OffsetDateTime now = OffsetDateTime.now(clock);
+                    result.forEach(oli -> oli.setFetchTime(now));
+
                     return Mono.just(result);
                 } catch (JsonProcessingException e) {
                     logger.warn("Failed to deserialize orders", e);
@@ -111,7 +114,10 @@ public class ShopwareAPI {
             .doOnError(e -> logger.warn("Failed to fetch order with id {}", id))
             .<SWOrder>flatMap(src -> {
                 try {
-                    return Mono.just(objectReader.readValue(src));
+                    SWOrder data = objectReader.readValue(src);
+                    data.setFetchTime(OffsetDateTime.now(clock));
+
+                    return Mono.just(data);
                 } catch (JsonProcessingException e) {
                     logger.warn("Failed to deserialize order", e);
                     return Mono.error(e);
@@ -120,7 +126,8 @@ public class ShopwareAPI {
     }
 
     public Mono<ResponseEntity<Void>> markOrderAsExported(SWOrder order) {
-        logger.info("Mark order with id {} as exported", order.getId());
+        logger.info("Mark order with id {} as exported, lt: {} t: {}",
+            order.getId(), order.getListFetchTime(), order.getFetchTime());
 
         ObjectNode rootNode = objectMapper.createObjectNode()
             .set("attribute", objectMapper.createObjectNode()

@@ -80,7 +80,11 @@ public class OrderPublisher implements Consumer<FluxSink<OrderListItem>> {
                 break;
 
             OrderListItem oli = oliQueue.poll();
-            if (oli != null) sink.next(oli);
+            if (oli != null) {
+                logger.info("Publish OLI into sink id: {} number: {} lt: {}",
+                    oli.getId(), oli.getNumber(), oli.getFetchTime());
+                sink.next(oli);
+            }
         }
 
         if (i > 0) {

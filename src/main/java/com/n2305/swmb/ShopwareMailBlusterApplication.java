@@ -7,6 +7,7 @@ import com.n2305.swmb.properties.MailBlusterProperties;
 import com.n2305.swmb.properties.ShopwareProperties;
 import com.n2305.swmb.shopware.FilterQueryParamSerializer;
 import com.n2305.swmb.shopware.ShopwareAPI;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
