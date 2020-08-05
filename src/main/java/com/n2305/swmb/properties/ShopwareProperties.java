@@ -21,6 +21,9 @@ public class ShopwareProperties {
     @NestedConfigurationProperty
     private List<ShopwareAPI.Filter> orderFilters = new LinkedList<>();
 
+    @NestedConfigurationProperty
+    private List<ShopwareAPI.Filter> customerFilters = new LinkedList<>();
+
     public String getBaseUri() {
         return baseUri;
     }
@@ -72,6 +75,15 @@ public class ShopwareProperties {
 
     public ShopwareProperties setOrderFilters(List<ShopwareAPI.Filter> orderFilters) {
         this.orderFilters = orderFilters;
+        return this;
+    }
+
+    public List<ShopwareAPI.Filter> getCustomerFilters() {
+        return customerFilters;
+    }
+
+    public ShopwareProperties setCustomerFilters(List<ShopwareAPI.Filter> customerFilters) {
+        this.customerFilters = customerFilters;
         return this;
     }
 
