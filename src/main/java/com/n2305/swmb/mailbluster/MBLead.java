@@ -1,7 +1,9 @@
 package com.n2305.swmb.mailbluster;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.util.Assert;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MBLead {
     private final String firstName;
     private final String lastName;
@@ -9,8 +11,6 @@ public class MBLead {
     private final boolean subscribed;
 
     public MBLead(String firstName, String lastName, String email, boolean subscribed) {
-        Assert.notNull(firstName, "Got empty firstName");
-        Assert.notNull(lastName, "Got empty lastName");
         Assert.notNull(email, "Got empty email");
 
         this.firstName = firstName;

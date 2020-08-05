@@ -27,9 +27,7 @@ public class CustomerListItem {
         String email,
         boolean newsletter
     ) {
-        Assert.notNull(firstName, "Got empty firstName");
-        Assert.notNull(firstName, "Got empty lastName");
-        Assert.notNull(firstName, "Got empty email");
+        Assert.notNull(email, "Got empty email");
 
         this.id = id;
         this.firstName = firstName;
