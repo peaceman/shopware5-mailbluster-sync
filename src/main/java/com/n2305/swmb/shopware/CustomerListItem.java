@@ -12,7 +12,7 @@ import java.util.Objects;
 
 @JsonDeserialize(builder = CustomerListItem.Builder.class)
 public class CustomerListItem {
-    private final int id;
+    private final long id;
     private final String firstName;
     private final String lastName;
     private final String email;
@@ -21,7 +21,7 @@ public class CustomerListItem {
     private OffsetDateTime fetchTime;
 
     private CustomerListItem(
-        int id,
+        long id,
         String firstName,
         String lastName,
         String email,
@@ -42,13 +42,13 @@ public class CustomerListItem {
     static class Builder {
         private static final Logger logger = LoggerFactory.getLogger(Builder.class);
 
-        int id;
+        long id;
         String firstName;
         String lastName;
         String email;
         boolean newsletter;
 
-        Builder withId(int id) {
+        Builder withId(long id) {
             this.id = id;
             return this;
         }
@@ -86,7 +86,7 @@ public class CustomerListItem {
         }
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
