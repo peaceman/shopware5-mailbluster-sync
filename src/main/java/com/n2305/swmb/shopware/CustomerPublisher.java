@@ -1,5 +1,6 @@
 package com.n2305.swmb.shopware;
 
+import com.n2305.swmb.properties.AppProperties;
 import com.n2305.swmb.properties.ShopwareProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,7 @@ public class CustomerPublisher implements Consumer<FluxSink<CustomerListItem>> {
 
     private final ShopwareAPI api;
     private final ShopwareProperties swProps;
+    private final AppProperties appProps;
     private final ConcurrentLinkedQueue<CustomerListItem> queue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean fetchInFlight = new AtomicBoolean(false);
     private final AtomicLong lastFetchedID;
@@ -35,9 +37,10 @@ public class CustomerPublisher implements Consumer<FluxSink<CustomerListItem>> {
     private Disposable checkIntervalDisposable;
     private Disposable stateStoreIntervalDisposable;
 
-    public CustomerPublisher(ShopwareAPI api, ShopwareProperties swProps) throws IOException {
+    public CustomerPublisher(ShopwareAPI api, ShopwareProperties swProps, AppProperties appProps) throws IOException {
         this.api = api;
         this.swProps = swProps;
+        this.appProps = appProps;
 
         this.lastFetchedID = new AtomicLong(readLastFetchedIDFromFile());
     }
@@ -58,7 +61,7 @@ public class CustomerPublisher implements Consumer<FluxSink<CustomerListItem>> {
     }
 
     private File getLastFetchedIDFile() throws IOException {
-        Path path = Path.of("last-fetched-id.txt");
+        Path path = Path.of(appProps.getStateFolderPath(), "last-fetched-id.txt");
         File file = path.toFile();
 
         file.createNewFile();

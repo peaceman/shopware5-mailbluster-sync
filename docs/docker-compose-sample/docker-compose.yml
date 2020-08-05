@@ -6,6 +6,9 @@ services:
   showpare-mailbluster-sync:
     image: peaceman/shopware5-mailbluster-sync:${APP_VERSION}
     <<: *restart-policy
+    environment:
+      APP_STATE_FOLDER_PATH: /state
     volumes:
       - ./application.yml:/workspace/application.yml
       - ./logs:/logs
+      - ./state:/state

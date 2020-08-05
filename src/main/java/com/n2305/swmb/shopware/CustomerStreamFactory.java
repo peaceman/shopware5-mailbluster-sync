@@ -1,5 +1,6 @@
 package com.n2305.swmb.shopware;
 
+import com.n2305.swmb.properties.AppProperties;
 import com.n2305.swmb.properties.ShopwareProperties;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
@@ -15,16 +16,23 @@ public class CustomerStreamFactory {
 
     private final ShopwareAPI shopwareAPI;
     private final ShopwareProperties swProps;
+    private final AppProperties appProps;
     private final EmailValidator emailValidator;
 
-    public CustomerStreamFactory(ShopwareAPI shopwareAPI, ShopwareProperties swProps, EmailValidator emailValidator) {
+    public CustomerStreamFactory(
+        ShopwareAPI shopwareAPI,
+        ShopwareProperties swProps,
+        EmailValidator emailValidator,
+        AppProperties appProps
+    ) {
         this.shopwareAPI = shopwareAPI;
         this.swProps = swProps;
+        this.appProps = appProps;
         this.emailValidator = emailValidator;
     }
 
     public Flux<CustomerListItem> create() throws IOException {
-        CustomerPublisher customerPublisher = new CustomerPublisher(shopwareAPI, swProps);
+        CustomerPublisher customerPublisher = new CustomerPublisher(shopwareAPI, swProps, appProps);
 
         return Flux.create(customerPublisher)
             .filter(cli -> emailValidator.isValid(cli.getEmail()));
