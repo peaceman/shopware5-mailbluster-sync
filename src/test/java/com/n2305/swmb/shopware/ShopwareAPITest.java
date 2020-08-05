@@ -17,9 +17,9 @@ import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -83,6 +83,43 @@ class ShopwareAPITest {
     }
 
     @Test
+    void testFetchCustomers() throws IOException {
+        wireMockServer.stubFor(get(urlPathMatching("/api/customers"))
+            .willReturn(okJson(stringFromResource("customers.json"))));
+
+        List<CustomerListItem> customerListItems = api.fetchCustomers(List.of(
+            new ShopwareAPI.Filter("id", "1", ">")
+        )).block();
+
+        Map<String, String> expectedQueryParams = new LinkedHashMap<>();
+        expectedQueryParams.put("filter[0][property]", "id");
+        expectedQueryParams.put("filter[0][value]", "1");
+        expectedQueryParams.put("filter[0][expression]", ">");
+
+        RequestPatternBuilder reqPatternBuilder = getRequestedFor(urlPathMatching("/api/customers"));
+        addQueryParams(reqPatternBuilder, expectedQueryParams);
+
+        wireMockServer.verify(reqPatternBuilder);
+        assertEquals(5, customerListItems.size());
+
+        CustomerListItem expectedCustomer = new CustomerListItem.Builder()
+            .withId(3)
+            .withFirstName("los")
+            .withLastName("wochos")
+            .withEmail("foo@example.com")
+            .withNewsletter(false)
+            .build();
+
+        assertThat(expectedCustomer, is(in(customerListItems)));
+    }
+
+    private void addQueryParams(RequestPatternBuilder reqPatternBuilder, Map<String, String> queryParams) {
+        queryParams.forEach((k, v) -> {
+            reqPatternBuilder.withQueryParam(URLEncoder.encode(k, StandardCharsets.UTF_8), equalTo(v));
+        });
+    }
+
+    @Test
     void testFetchOrders() throws ExecutionException, InterruptedException, URISyntaxException, IOException {
         wireMockServer.stubFor(get(urlPathMatching("/api/orders"))
             .willReturn(okJson(stringFromResource("orders.json"))));
@@ -102,15 +139,9 @@ class ShopwareAPITest {
         expectedQueryParams.put("filter[1][expression]", "=");
 
         RequestPatternBuilder reqPatternBuilder = getRequestedFor(urlPathMatching("/api/orders"));
-        expectedQueryParams.forEach((k, v) -> {
-            try {
-                reqPatternBuilder.withQueryParam(URLEncoder.encode(k, "UTF-8"), equalTo(v));
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
-        });
-        wireMockServer.verify(reqPatternBuilder);
+        addQueryParams(reqPatternBuilder, expectedQueryParams);
 
+        wireMockServer.verify(reqPatternBuilder);
 
         assertEquals(5, orderListItems.size());
         assertThat(new OrderListItem(2, "20001", OffsetDateTime.now(clock)), is(in(orderListItems)));
