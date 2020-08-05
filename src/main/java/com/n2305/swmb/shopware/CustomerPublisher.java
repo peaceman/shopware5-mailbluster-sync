@@ -101,7 +101,7 @@ public class CustomerPublisher implements Consumer<FluxSink<CustomerListItem>> {
     private void setupStateStoreInterval() {
         dispose(stateStoreIntervalDisposable);
 
-        stateStoreIntervalDisposable = Flux.interval(Duration.ofSeconds(30))
+        stateStoreIntervalDisposable = Flux.interval(Duration.ofSeconds(5))
             .subscribe(n -> this.storeState());
     }
 

@@ -54,8 +54,6 @@ public class ShopwareAPI {
             .readerForListOf(CustomerListItem.class)
             .at("/data");
 
-        logger.info("Fetch orders");
-
         return httpClient.get()
             .uri(uriBuilder -> {
                 filterQueryParamSerializer
