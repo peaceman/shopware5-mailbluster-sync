@@ -57,4 +57,29 @@ class MailBlusterAPITest {
             .withRequestBody(equalToJson(new String(getClass()
                 .getResourceAsStream("create-order.json").readAllBytes()))));
     }
+
+    @Test
+    void testCreateLeadSerialization() throws IOException {
+        MBLead lead = new MBLead(
+            "first name",
+            "last name",
+            "email",
+            false
+        );
+
+        MailBlusterAPI mbAPI = new MailBlusterAPI(WebClient.builder()
+            .baseUrl(wireMockServer.baseUrl()).build());
+
+        wireMockServer.stubFor(post("/api/leads").willReturn(aResponse().withStatus(201)));
+
+        mbAPI.createLead(lead)
+            .block();
+
+        wireMockServer.verify(postRequestedFor(urlMatching("/api/leads"))
+            .withRequestBody(equalToJson(stringFromResource("create-lead.json"))));
+    }
+
+    private String stringFromResource(String path) throws IOException {
+        return new String(getClass().getResourceAsStream(path).readAllBytes());
+    }
 }

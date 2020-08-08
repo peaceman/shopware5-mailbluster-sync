@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
@@ -42,6 +43,34 @@ public class MailBlusterAPI {
                         "Received WebClientResponseException for order {}:\nRequest:\n{}\nResponse:\n{}",
                         order.getId(),
                         jsonOrder,
+                        String.format("%s\n%s", e.getHeaders().toString(), e.getResponseBodyAsString())
+                    );
+                });
+        } catch (JsonProcessingException e) {
+            return Mono.error(e);
+        }
+    }
+
+    public Mono<ResponseEntity<Void>> createLead(MBLead lead) {
+        try {
+            String jsonLead = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(lead);
+
+            return httpClient
+                .post()
+                .uri(uriBuilder -> uriBuilder.path("/api/leads").build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(jsonLead))
+                .retrieve()
+                .toBodilessEntity()
+                .doOnError(
+                    e -> !(e instanceof WebClientException),
+                    e -> logger.warn("Failed to create lead", e)
+                )
+                .doOnError(WebClientResponseException.class, e -> {
+                    logger.warn(
+                        "Received WebClientResponseException for lead {}:\nRequest:\n{}\nResponse:\n{}",
+                        lead.getEmail(),
+                        jsonLead,
                         String.format("%s\n%s", e.getHeaders().toString(), e.getResponseBodyAsString())
                     );
                 });

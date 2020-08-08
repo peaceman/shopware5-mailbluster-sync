@@ -45,6 +45,54 @@ public class ShopwareAPI {
         this.clock = clock;
     }
 
+    public Mono<List<CustomerListItem>> fetchCustomers() {
+        return fetchCustomers(Collections.emptyList());
+    }
+
+    public Mono<List<CustomerListItem>> fetchCustomers(List<Filter> filters) {
+        ObjectReader objectReader = objectMapper
+            .readerForListOf(CustomerListItem.class)
+            .at("/data");
+
+        return httpClient.get()
+            .uri(uriBuilder -> {
+                filterQueryParamSerializer
+                    .serialize(filters)
+                    .forEach(uriBuilder::queryParam);
+
+                URI uri = uriBuilder
+                    .path("/api/customers")
+                    .queryParam("limit", LIST_LIMIT)
+                    .queryParam("sort[0][property]", "id")
+                    .queryParam("sort[0][direction]", "ASC")
+                    .build();
+
+                logger.info("Fetch customers with uri: {}", uri.toString());
+
+                return uri;
+            })
+            .retrieve()
+            .bodyToMono(String.class)
+            .doOnError(e -> logger.warn("Failed to fetch customers {}", e.getMessage()))
+            .<List<CustomerListItem>>flatMap(src -> {
+                try {
+                    List<CustomerListItem> result = objectReader.readValue(src);
+                    logger.info("Fetched customers with ids: {}", result.stream()
+                        .map(CustomerListItem::getId)
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(", ")));
+
+                    OffsetDateTime now = OffsetDateTime.now(clock);
+                    result.forEach(oli -> oli.setFetchTime(now));
+
+                    return Mono.just(result);
+                } catch (JsonProcessingException e) {
+                    logger.warn("Failed to deserialize customers", e);
+                    return Mono.error(e);
+                }
+            });
+    }
+
     public Mono<List<OrderListItem>> fetchOrders() {
         return fetchOrders(Collections.emptyList());
     }

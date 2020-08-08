@@ -1,12 +1,11 @@
 package com.n2305.swmb;
 
+import com.n2305.swmb.mailbluster.MBLead;
 import com.n2305.swmb.mailbluster.MBOrder;
 import com.n2305.swmb.mailbluster.MailBlusterAPI;
 import com.n2305.swmb.mailbluster.PartnerCampaignIDMapper;
 import com.n2305.swmb.properties.MailBlusterProperties;
-import com.n2305.swmb.shopware.OrderStreamFactory;
-import com.n2305.swmb.shopware.SWOrder;
-import com.n2305.swmb.shopware.ShopwareAPI;
+import com.n2305.swmb.shopware.*;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import org.slf4j.Logger;
@@ -20,6 +19,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -36,20 +36,24 @@ public class SyncService implements DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(SyncService.class);
 
     private final OrderStreamFactory orderStreamFactory;
+    private final CustomerStreamFactory customerStreamFactory;
     private final MailBlusterProperties mbProps;
     private final MailBlusterAPI mbAPI;
     private final ShopwareAPI swAPI;
     private final PartnerCampaignIDMapper partnerCampaignIDMapper;
     private Disposable orderStreamDisposable;
+    private Disposable customerStreamDisposable;
 
     public SyncService(
         OrderStreamFactory orderStreamFactory,
+        CustomerStreamFactory customerStreamFactory,
         MailBlusterProperties mbProps,
         MailBlusterAPI mbAPI,
         ShopwareAPI swAPI,
         PartnerCampaignIDMapper partnerCampaignIDMapper
     ) {
         this.orderStreamFactory = orderStreamFactory;
+        this.customerStreamFactory = customerStreamFactory;
         this.mbProps = mbProps;
         this.mbAPI = mbAPI;
         this.swAPI = swAPI;
@@ -57,10 +61,8 @@ public class SyncService implements DisposableBean {
     }
 
     @PostConstruct
-    private void start() {
+    private void start() throws IOException {
         logger.info("Before stream start");
-
-        Flux<SWOrder> orderStream = orderStreamFactory.create();
 
         RateLimiterConfig rlc = RateLimiterConfig.custom()
             .limitForPeriod(mbProps.getRequestsPerMinute())
@@ -70,7 +72,16 @@ public class SyncService implements DisposableBean {
 
         RateLimiter rl = RateLimiter.of("mailbluster", rlc);
 
-        orderStreamDisposable = orderStream
+        orderStreamDisposable = startOrderStream(rl);
+        customerStreamDisposable = startCustomerStream(rl);
+
+        logger.info("After stream start");
+    }
+
+    private Disposable startOrderStream(RateLimiter rl) {
+        Flux<SWOrder> orderStream = orderStreamFactory.create();
+
+        return orderStream
             .map(OrderStreamElement::new)
             .flatMap(ose -> {
                 try {
@@ -87,7 +98,7 @@ public class SyncService implements DisposableBean {
                 .onErrorResume(
                     e -> e instanceof WebClientResponseException.UnprocessableEntity
                         && ((WebClientResponseException.UnprocessableEntity) e).getResponseBodyAsString()
-                            .contains("Order id already exists"),
+                        .contains("Order id already exists"),
                     e -> Mono.just(ose)
                 )
                 .onErrorResume(e -> Mono.empty()))
@@ -98,8 +109,6 @@ public class SyncService implements DisposableBean {
                 SWOrder swOrder = ose.getSwOrder();
                 logger.info("Finished handling order id: {} number: {}", swOrder.getId(), swOrder.getNumber());
             });
-
-        logger.info("After stream start");
     }
 
     private MBOrder mapOrder(SWOrder swOrder) {
@@ -176,9 +185,40 @@ public class SyncService implements DisposableBean {
         );   
     }
 
+    private Disposable startCustomerStream(RateLimiter rl) throws IOException {
+        Flux<CustomerListItem> customerStream = customerStreamFactory.create();
+
+        return customerStream
+            .flatMap(cli -> {
+                try {
+                    return Mono.just(mapCustomerToLead(cli));
+                } catch (Throwable e) {
+                    return Mono.empty();
+                }
+            })
+            .transform(RateLimitElements.with(rl))
+            .delayElements(Duration.ofMillis(60 * 1000 / mbProps.getRequestsPerMinute()))
+            .flatMap(lead -> this.mbAPI.createLead(lead)
+                .thenReturn(lead)
+                .onErrorResume(e -> Mono.empty()))
+            .subscribe(lead -> {
+                logger.info("Finished handling lead: {}", lead.getEmail());
+            });
+    }
+
+    private MBLead mapCustomerToLead(CustomerListItem customer) {
+        return new MBLead(
+            customer.getFirstName(),
+            customer.getLastName(),
+            customer.getEmail(),
+            customer.isNewsletter()
+        );
+    }
+
     @Override
     public void destroy() throws Exception {
         orderStreamDisposable.dispose();
+        customerStreamDisposable.dispose();
     }
 
     public static class RateLimitElements<T> implements Function<Flux<T>, Flux<T>> {
