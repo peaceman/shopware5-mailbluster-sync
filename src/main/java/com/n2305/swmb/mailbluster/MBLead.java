@@ -15,7 +15,7 @@ public class MBLead {
 
         this.firstName = firstName;
         this.lastName = lastName;
-        this.email = email;
+        this.email = email.toLowerCase();
         this.subscribed = subscribed;
     }
 

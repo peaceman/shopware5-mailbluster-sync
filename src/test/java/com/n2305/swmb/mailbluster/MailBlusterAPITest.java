@@ -63,7 +63,7 @@ class MailBlusterAPITest {
         MBLead lead = new MBLead(
             "first name",
             "last name",
-            "email",
+            "Email",
             false
         );
 
