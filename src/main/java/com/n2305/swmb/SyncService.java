@@ -211,7 +211,7 @@ public class SyncService implements DisposableBean {
             customer.getFirstName(),
             customer.getLastName(),
             customer.getEmail(),
-            customer.isNewsletter()
+            true
         );
     }
 
